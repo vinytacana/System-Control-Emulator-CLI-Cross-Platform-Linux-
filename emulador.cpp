@@ -4,6 +4,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <limits>
 
 using namespace std;
 
@@ -316,5 +320,165 @@ void desconectar_wifi(const string &id)
     else
     {
         perror("fork falhou");
+    }
+}
+
+void scan_dispositivos_bluetooth()
+{
+    cout << "Procurando dispositivos Bluetooth... (Ctrl+C para parar)\n";
+    system("bluetoothctl scan on");
+}
+
+bool conectar_bluetooth(const string &mac)
+{
+    string comando = "bluetoothctl connect " + mac;
+    int resultado = system(comando.c_str());
+
+    if (resultado == 0)
+    {
+        cout << "Conectado com sucesso ao dispositivo " << mac << endl;
+        return true;
+    }
+    else
+    {
+        cerr << "Falha ao conectar ao dispositivo " << mac << endl;
+        return false;
+    }
+}
+
+bool desconectar_bluetooth(const string &mac)
+{
+    string comando = "bluetoothctl disconnect " + mac;
+    int resultado = system(comando.c_str());
+
+    if (resultado == 0)
+    {
+        cout << "Desconectado com sucesso do dispositivo " << mac << endl;
+        return true;
+    }
+    else
+    {
+        cerr << "Falha ao desconectar do dispositivo " << mac << endl;
+        return false;
+    }
+}
+
+void listar_dispositivos_bluetooth()
+{
+    cout << "Dispositivos Bluetooth pareados:\n";
+    system("bluetoothctl devices");
+}
+std::vector<device_bt> parsing_bluetooth_stream(std::istream &input)
+{
+    std::vector<device_bt> lista;
+    std::string linha;
+
+    while (std::getline(input, linha))
+    {
+        std::stringstream ss(linha);
+        std::string tag, mac, nome_restante;
+
+        // Tenta ler a primeira palavra ("Device")
+        ss >> tag;
+
+        if (tag == "Device")
+        {
+            ss >> mac; // Lê o MAC
+
+            // Lê o resto da linha como o nome
+            std::getline(ss, nome_restante);
+
+            // Limpeza: remove espaços extras no início do nome
+            size_t primeiro_char = nome_restante.find_first_not_of(" \t");
+            if (primeiro_char != std::string::npos)
+            {
+                nome_restante = nome_restante.substr(primeiro_char);
+            }
+
+            lista.push_back({mac, nome_restante});
+        }
+    }
+    return lista;
+}
+
+std::vector<device_bt> get_list_device()
+{
+
+    int ret = system("bluetoothctl devices > /tmp/bt_list.txt");
+    if (ret != 0)
+    {
+        std::cerr << "Aviso: Falha ao executar bluetoothctl.\n";
+    }
+
+    // Abre o arquivo
+    std::ifstream arquivo("/tmp/bt_list.txt");
+    if (!arquivo.is_open())
+    {
+        std::cerr << "Erro: Não foi possível abrir o arquivo de lista Bluetooth.\n";
+        return {};
+    }
+
+    // Passa o arquivo aberto para o parser
+    // O parser não sabe se é um arquivo ou string, ele só lê.
+    return parsing_bluetooth_stream(arquivo);
+}
+
+void gerenciar_bluetooth()
+{
+    std::cout << "Carregando lista de dispositivos...\n";
+    std::vector<device_bt> dispositivos = get_list_device();
+
+    if (dispositivos.empty())
+    {
+        std::cout << "Nenhum dispositivo pareado encontrado.\n";
+        std::cout << "Dica: Use 'scan_dispositivos_bluetooth' para encontrar novos.\n";
+        return;
+    }
+
+    std::cout << "\n=== Dispositivos Pareados ===\n";
+    for (size_t i = 0; i < dispositivos.size(); ++i)
+    {
+        std::cout << "[" << i + 1 << "] " << dispositivos[i].nome
+                  << " \t(" << dispositivos[i].mac << ")\n";
+    }
+    std::cout << "=============================\n";
+
+    std::cout << "Escolha um dispositivo (0 para sair): ";
+    int escolha;
+    std::cin >> escolha;
+
+    // Validação de entrada
+    if (std::cin.fail() || escolha < 0 || escolha > static_cast<int>(dispositivos.size()))
+    {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "Opção inválida.\n";
+        return;
+    }
+
+    if (escolha == 0)
+        return;
+
+    const auto &device = dispositivos[escolha - 1];
+
+    std::cout << "\nDispositivo selecionado: " << device.nome << "\n";
+    std::cout << "[1] Conectar\n";
+    std::cout << "[2] Desconectar\n";
+    std::cout << "Opção: ";
+
+    int acao;
+    std::cin >> acao;
+
+    if (acao == 1)
+    {
+        conectar_bluetooth(device.mac);
+    }
+    else if (acao == 2)
+    {
+        desconectar_bluetooth(device.mac);
+    }
+    else
+    {
+        std::cout << "Ação desconhecida.\n";
     }
 }

@@ -25,6 +25,11 @@ int main(int argc, char *argv[])
         cout << argv[0] << " listar_wifi\n";
         cout << argv[0] << " conectar_wifi <SSID> <senha>\n";
         cout << argv[0] << " desconectar_wifi <SSID>\n";
+        cout << argv[0] << " scan_dispositivos_bluetooth\n";
+        cout << argv[0] << " conectar_bluetooth <MAC>\n";
+        cout << argv[0] << " desconectar_bluetooth <MAC>\n";
+        cout << argv[0] << " listar_dispositivos_bluetooth\n";
+        cout << argv[0] << " gerenciar_bluetooth\n";
 
         return 1;
     }
@@ -122,7 +127,37 @@ int main(int argc, char *argv[])
         string id = argv[2];
         desconectar_wifi(id);
     }
+    else if (cmd == "scan_dispositivos_bluetooth")
+    {
+        scan_dispositivos_bluetooth();
+    }
+    else if (cmd == "conectar_bluetooth")
+    {
+        if (argc < 2)
+        {
+            cout << "Uso: " << argv[0] << "conectar_bluetooth <MAC>\n";
+        }
+        string mac = argv[2];
+        conectar_bluetooth(mac);
+    }
+    else if (cmd == "desconectar_bluetooth")
+    {
+        if (argc < 2)
+        {
+            cout << "Uso: " << argv[0] << "desconectar_bluetooth <MAC>";
+        }
 
+        string mac = argv[2];
+        desconectar_bluetooth(mac);
+    }
+    else if (cmd == "listar_dispositivos_bluetooth")
+    {
+        listar_dispositivos_bluetooth();
+    }
+    else if (cmd == "gerenciar_bluetooth")
+    {
+        gerenciar_bluetooth();
+    }
     else
     {
         cout << "Comando desconhecido: " << cmd << "\n";
