@@ -8,6 +8,12 @@
 #include <sstream>
 #include <vector>
 #include <limits>
+#include <thread>
+#include <chrono>
+#include <pty.h>
+#include <sys/select.h>
+#include <unordered_map>
+
 
 using namespace std;
 
@@ -323,10 +329,62 @@ void desconectar_wifi(const string &id)
     }
 }
 
-void scan_dispositivos_bluetooth()
+std::vector<device_bt> scan_dispositivos_bluetooth(int segundos)
 {
-    cout << "Procurando dispositivos Bluetooth... (Ctrl+C para parar)\n";
-    system("bluetoothctl scan on");
+   std::unordered_map<std::string, device_bt> mapa;
+
+    int master_fd;
+    pid_t pid = forkpty(&master_fd, nullptr, nullptr, nullptr);
+
+    if (pid == 0)
+    {
+        execlp("bluetoothctl", "bluetoothctl", nullptr);
+        _exit(1);
+    }
+
+    write(master_fd, "power on\n", 9);
+    write(master_fd, "agent on\ndefault-agent\n", 24);
+    write(master_fd, "scan on\n", 8);
+
+    auto inicio = std::chrono::steady_clock::now();
+    char buffer[512];
+
+    while (true)
+    {
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(master_fd, &fds);
+
+        struct timeval tv{1, 0};
+        int ret = select(master_fd + 1, &fds, nullptr, nullptr, &tv);
+
+        if (ret > 0 && FD_ISSET(master_fd, &fds))
+        {
+            int n = read(master_fd, buffer, sizeof(buffer) - 1);
+            if (n > 0)
+            {
+                buffer[n] = '\0';
+                std::stringstream ss(buffer);
+
+                // agora só atualiza o MAPA
+                parsing_bluetooth_stream(ss, mapa);
+            }
+        }
+
+        auto agora = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::seconds>(agora - inicio).count() >= segundos)
+            break;
+    }
+
+    write(master_fd, "scan off\nquit\n", 14);
+    close(master_fd);
+
+    // converte mapa → vector
+    std::vector<device_bt> lista;
+    for (auto &[_, d] : mapa)
+        lista.push_back(d);
+
+    return lista;
 }
 
 bool conectar_bluetooth(const string &mac)
@@ -363,43 +421,125 @@ bool desconectar_bluetooth(const string &mac)
     }
 }
 
-void listar_dispositivos_bluetooth()
+void listar_dispositivos_bluetooth(const std::vector<device_bt> &dispositivos)
 {
-    cout << "Dispositivos Bluetooth pareados:\n";
-    system("bluetoothctl devices");
+    if (dispositivos.empty())
+    {
+        std::cout << "Nenhum dispositivo encontrado.\n";
+        return;
+    }
+
+    int i = 1;
+    for (const auto &d : dispositivos)
+    {
+        std::cout << i++ << ") "
+                  << d.nome << " - "
+                  << d.mac << '\n';
+    }
 }
-std::vector<device_bt> parsing_bluetooth_stream(std::istream &input)
+void parsing_bluetooth_stream(
+    std::istream &input,
+    std::unordered_map<std::string, device_bt> &mapa
+)
 {
-    std::vector<device_bt> lista;
     std::string linha;
 
     while (std::getline(input, linha))
     {
-        std::stringstream ss(linha);
-        std::string tag, mac, nome_restante;
+        auto pos = linha.find("Device ");
+        if (pos == std::string::npos)
+            continue;
 
-        // Tenta ler a primeira palavra ("Device")
-        ss >> tag;
+        std::stringstream ss(linha.substr(pos));
+        std::string device_kw, mac;
+        ss >> device_kw >> mac;
 
-        if (tag == "Device")
+        if (device_kw != "Device" || mac.empty())
+            continue;
+
+        // DEL → remover
+        if (linha.find("[DEL]") != std::string::npos)
         {
-            ss >> mac; // Lê o MAC
+            mapa.erase(mac);
+            continue;
+        }
 
-            // Lê o resto da linha como o nome
-            std::getline(ss, nome_restante);
+        auto &dev = mapa[mac];
+        dev.mac = mac;
 
-            // Limpeza: remove espaços extras no início do nome
-            size_t primeiro_char = nome_restante.find_first_not_of(" \t");
-            if (primeiro_char != std::string::npos)
+        auto name_pos = linha.find("Name:");
+        if (name_pos != std::string::npos)
+        {
+            std::string nome = linha.substr(name_pos + 5);
+
+            size_t first = nome.find_first_not_of(" \t");
+            size_t last  = nome.find_last_not_of(" \t\r\n");
+
+            if (first != std::string::npos && last != std::string::npos)
             {
-                nome_restante = nome_restante.substr(primeiro_char);
+                nome = nome.substr(first, last - first + 1);
+                if (nome.size() >= 3)
+                    dev.nome = nome;
             }
-
-            lista.push_back({mac, nome_restante});
         }
     }
+}
+
+std::vector<device_bt> parsing_bluetooth_stream(std::istream &input)
+{
+    std::unordered_map<std::string, device_bt> mapa;
+    std::string linha;
+
+    while (std::getline(input, linha))
+    {
+        auto pos = linha.find("Device ");
+        if (pos == std::string::npos)
+            continue;
+
+        std::stringstream ss(linha.substr(pos));
+        std::string device_kw, mac;
+        ss >> device_kw >> mac;
+
+        if (device_kw != "Device" || mac.empty())
+            continue;
+
+        // DEL = remover dispositivo
+        if (linha.find("[DEL]") != std::string::npos)
+        {
+            mapa.erase(mac);
+            continue;
+        }
+
+        // garante entrada única por MAC
+        auto &dev = mapa[mac];
+        dev.mac = mac;
+
+        // atualiza nome somente se for Name:
+        auto name_pos = linha.find("Name:");
+        if (name_pos != std::string::npos)
+        {
+            std::string nome = linha.substr(name_pos + 5);
+
+            size_t first = nome.find_first_not_of(" \t");
+            size_t last  = nome.find_last_not_of(" \t\r\n");
+
+            if (first != std::string::npos && last != std::string::npos)
+            {
+                nome = nome.substr(first, last - first + 1);
+
+                if (nome.size() >= 3)
+                    dev.nome = nome;
+            }
+        }
+    }
+
+    std::vector<device_bt> lista;
+    for (auto &[_, d] : mapa)
+        lista.push_back(d);
+
     return lista;
 }
+
 
 std::vector<device_bt> get_list_device()
 {
@@ -409,8 +549,6 @@ std::vector<device_bt> get_list_device()
     {
         std::cerr << "Aviso: Falha ao executar bluetoothctl.\n";
     }
-
-    // Abre o arquivo
     std::ifstream arquivo("/tmp/bt_list.txt");
     if (!arquivo.is_open())
     {
@@ -418,8 +556,6 @@ std::vector<device_bt> get_list_device()
         return {};
     }
 
-    // Passa o arquivo aberto para o parser
-    // O parser não sabe se é um arquivo ou string, ele só lê.
     return parsing_bluetooth_stream(arquivo);
 }
 
@@ -447,7 +583,6 @@ void gerenciar_bluetooth()
     int escolha;
     std::cin >> escolha;
 
-    // Validação de entrada
     if (std::cin.fail() || escolha < 0 || escolha > static_cast<int>(dispositivos.size()))
     {
         std::cin.clear();

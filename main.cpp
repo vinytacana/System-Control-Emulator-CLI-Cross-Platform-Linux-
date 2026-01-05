@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -25,7 +26,7 @@ int main(int argc, char *argv[])
         cout << argv[0] << " listar_wifi\n";
         cout << argv[0] << " conectar_wifi <SSID> <senha>\n";
         cout << argv[0] << " desconectar_wifi <SSID>\n";
-        cout << argv[0] << " scan_dispositivos_bluetooth\n";
+        cout << argv[0] << " scan_dispositivos_bluetooth <tempo>\n";
         cout << argv[0] << " conectar_bluetooth <MAC>\n";
         cout << argv[0] << " desconectar_bluetooth <MAC>\n";
         cout << argv[0] << " listar_dispositivos_bluetooth\n";
@@ -129,7 +130,17 @@ int main(int argc, char *argv[])
     }
     else if (cmd == "scan_dispositivos_bluetooth")
     {
-        scan_dispositivos_bluetooth();
+        int tempo_scan = 10;
+
+        if (argc >= 3)
+            tempo_scan = std::stoi(argv[2]);
+
+        std::cout << "Escaneando dispositivos Bluetooth por "
+                  << tempo_scan << " segundos...\n";
+
+        auto dispositivos = scan_dispositivos_bluetooth(tempo_scan);
+
+        listar_dispositivos_bluetooth(dispositivos);
     }
     else if (cmd == "conectar_bluetooth")
     {
@@ -152,7 +163,8 @@ int main(int argc, char *argv[])
     }
     else if (cmd == "listar_dispositivos_bluetooth")
     {
-        listar_dispositivos_bluetooth();
+        auto dispositivos = scan_dispositivos_bluetooth();
+        listar_dispositivos_bluetooth(dispositivos);
     }
     else if (cmd == "gerenciar_bluetooth")
     {
