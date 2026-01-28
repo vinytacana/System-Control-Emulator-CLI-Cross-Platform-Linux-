@@ -5,7 +5,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -33,7 +32,8 @@ int main(int argc, char *argv[])
         cout << argv[0] << " gerenciar_bluetooth\n";
         cout << argv[0] << " obter_bateria\n";
         cout << argv[0] << " obter_tempo\n";
-
+        cout << argv[0] << " listar_audio\n";
+        cout << argv[0] << " definir_audio <ID>\n";
 
         return 1;
     }
@@ -173,13 +173,19 @@ int main(int argc, char *argv[])
     {
         gerenciar_bluetooth();
     }
-    else if(cmd == "obter_bateria"){
+    else if (cmd == "obter_bateria")
+    {
         int bat = obter_bateria();
-        cout<<bat<<endl;
+        cout << bat << endl;
     }
-    else if(cmd== "obter_tempo"){
+    else if (cmd == "obter_tempo")
+    {
         long long tempo = obter_tempo_ms();
-        cout<< tempo <<endl;
+        cout << tempo << endl;
+    }
+    else if (cmd == "listar_audio")
+    {
+        imprimir_dispositivos_audio();
     }
     else
     {

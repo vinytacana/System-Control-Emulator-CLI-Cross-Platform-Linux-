@@ -618,3 +618,104 @@ long long obter_tempo_ms()
     
     return std::chrono::duration_cast<std::chrono::milliseconds>(duracao).count();
 }
+
+std::string limpar_nome_audio(std::string raw) {
+    size_t colchete = raw.find('[');
+    if (colchete != std::string::npos) {
+        raw = raw.substr(0, colchete);
+    }
+  
+    while (!raw.empty() && isspace(raw.back())) raw.pop_back();
+    return raw;
+}
+
+std::vector<device_audio> listar_dispositivos_audio()
+{
+    std::vector<device_audio> lista;
+    
+    int ret = system("wpctl status > /tmp/audio_list.txt");
+    if (ret != 0) return lista;
+
+    std::ifstream arquivo("/tmp/audio_list.txt");
+    if (!arquivo.is_open()) return lista;
+
+    std::string linha;
+    bool na_secao_sinks = false;
+
+    while (std::getline(arquivo, linha))
+    {
+
+        if (linha.find("Sinks:") != std::string::npos) {
+            na_secao_sinks = true;
+            continue;
+        }
+
+        if (na_secao_sinks && (linha.find("Sources:") != std::string::npos || linha.find("Filters:") != std::string::npos || linha.empty())) {
+            break;
+        }
+
+     
+        if (na_secao_sinks) {
+   
+            size_t pontoPos = linha.find('.');
+            if (pontoPos != std::string::npos && pontoPos > 0 && isdigit(linha[pontoPos-1])) {
+                
+                device_audio dev;
+                dev.padrao = (linha.find('*') != std::string::npos);
+                
+               
+                size_t inicioNum = pontoPos - 1;
+                while (inicioNum > 0 && isdigit(linha[inicioNum-1])) {
+                    inicioNum--;
+                }
+                
+                try {
+                    dev.id = std::stoi(linha.substr(inicioNum, pontoPos - inicioNum));
+
+                    if (pontoPos + 2 < linha.size()) {
+                        dev.descricao = limpar_nome_audio(linha.substr(pontoPos + 2));
+                        lista.push_back(dev);
+                    }
+                } catch (...) {
+                    continue; 
+                }
+            }
+        }
+    }
+    return lista;
+}
+
+void selecionar_dispositivo_audio(int id)
+{
+    std::string comando = "wpctl set-default " + std::to_string(id);
+    
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        execlp("sh", "sh", "-c", comando.c_str(), nullptr);
+        perror("execlp falhou");
+        exit(1);
+    }
+    else if (pid > 0)
+    {
+        waitpid(pid, nullptr, 0);
+        std::cout << "Dispositivo de áudio " << id << " definido como padrão.\n";
+    }
+}
+
+void imprimir_dispositivos_audio()
+{
+    auto lista = listar_dispositivos_audio();
+    if (lista.empty()) {
+        std::cout << "Nenhum dispositivo de saída encontrado.\n";
+        return;
+    }
+
+    std::cout << "=== Dispositivos de Saída ===\n";
+    for (const auto& dev : lista) {
+        std::cout << (dev.padrao ? "[*] " : "[ ] ") 
+                  << "ID: " << dev.id 
+                  << " | " << dev.descricao << "\n";
+    }
+    std::cout << "=============================\n";
+}

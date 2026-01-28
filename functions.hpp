@@ -11,6 +11,12 @@ struct device_bt {
     std::string nome;
 };
 
+struct device_audio{
+    int id;
+    std::string descricao;
+    bool padrao;
+};
+
 // Sistema
 void aumentar_volume();
 void diminuir_volume();
@@ -42,4 +48,7 @@ void parsing_bluetooth_stream(
 int obter_bateria();
 long long obter_tempo_ms();
 
+std::vector<device_audio> listar_dispositivos_audio();
+void selecionar_dispositivo_audio(int id);
+void imprimir_dispositivos_audio();
 #endif
