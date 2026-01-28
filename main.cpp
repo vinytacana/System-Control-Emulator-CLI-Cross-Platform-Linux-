@@ -187,6 +187,16 @@ int main(int argc, char *argv[])
     {
         imprimir_dispositivos_audio();
     }
+    else if (cmd == "definir_audio")
+    {
+        if (argc < 3)
+        {
+            cout << "Uso: " << argv[0] << " definir_audio <ID>\n";
+            return 1;
+        }
+        int id = std::stoi(argv[2]);
+        selecionar_dispositivo_audio(id);
+    }
     else
     {
         cout << "Comando desconhecido: " << cmd << "\n";
