@@ -35,7 +35,6 @@ void listar_dispositivos_bluetooth(const std::vector<device_bt> &dispositivos);
 void gerenciar_bluetooth();
 
 // Parsing
-std::vector<device_bt> parsing_bluetooth_stream(std::istream &input);
 void parsing_bluetooth_stream(
     std::istream &input,
     std::unordered_map<std::string, device_bt> &mapa
