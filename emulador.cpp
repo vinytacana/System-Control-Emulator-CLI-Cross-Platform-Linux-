@@ -442,11 +442,11 @@ void listar_dispositivos_bluetooth(const std::vector<device_bt> &dispositivos)
 )
 {
     std::string linha;
-    std::string ultimo_mac; // ← chave para discovery
+    std::string ultimo_mac;
 
     while (std::getline(input, linha))
     {
-        // Caso 1: linha "Device <MAC> <NOME>"
+    
         if (linha.find("Device ") != std::string::npos)
         {
             std::stringstream ss(linha);
@@ -456,7 +456,7 @@ void listar_dispositivos_bluetooth(const std::vector<device_bt> &dispositivos)
             if (device_kw != "Device" || mac.empty())
                 continue;
 
-            // DEL → remover
+        
             if (linha.find("[DEL]") != std::string::npos)
             {
                 mapa.erase(mac);
@@ -467,7 +467,7 @@ void listar_dispositivos_bluetooth(const std::vector<device_bt> &dispositivos)
             dev.mac = mac;
             ultimo_mac = mac;
 
-            // tenta capturar nome na mesma linha
+
             std::string resto;
             std::getline(ss, resto);
 
@@ -482,7 +482,7 @@ void listar_dispositivos_bluetooth(const std::vector<device_bt> &dispositivos)
             continue;
         }
 
-        // Caso 2: discovery → "Name:"
+
         if (!ultimo_mac.empty() && linha.find("Name:") != std::string::npos)
         {
             auto &dev = mapa[ultimo_mac];
@@ -718,4 +718,27 @@ void imprimir_dispositivos_audio()
                   << " | " << dev.descricao << "\n";
     }
     std::cout << "=============================\n";
+}
+
+bool obter_estado_bluetooth()
+{
+    
+    int ret = system("bluetoothctl show > /tmp/bt_state.txt");
+    if (ret != 0) return false; 
+
+    std::ifstream arquivo("/tmp/bt_state.txt");
+    if (!arquivo.is_open()) return false;
+
+    std::string linha;
+    while (std::getline(arquivo, linha))
+    {
+        
+        if (linha.find("Powered: yes") != std::string::npos)
+        {
+            return true;
+        }
+    }
+    
+
+    return false;
 }

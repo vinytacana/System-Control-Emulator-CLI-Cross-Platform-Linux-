@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
         cout << argv[0] << " obter_tempo\n";
         cout << argv[0] << " listar_audio\n";
         cout << argv[0] << " definir_audio <ID>\n";
+        cout << argv[0] << " status_bluetooth\n";
 
         return 1;
     }
@@ -172,6 +173,11 @@ int main(int argc, char *argv[])
     else if (cmd == "gerenciar_bluetooth")
     {
         gerenciar_bluetooth();
+    }
+    else if (cmd == "status_bluetooth")
+    {
+        bool estado = obter_estado_bluetooth();
+        cout << (estado ? "1" : "0") << endl;
     }
     else if (cmd == "obter_bateria")
     {

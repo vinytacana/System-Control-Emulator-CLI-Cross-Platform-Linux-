@@ -39,6 +39,7 @@ bool conectar_bluetooth(const std::string &mac);
 bool desconectar_bluetooth(const std::string &mac);
 void listar_dispositivos_bluetooth(const std::vector<device_bt> &dispositivos);
 void gerenciar_bluetooth();
+bool obter_estado_bluetooth();
 
 // Parsing
 void parsing_bluetooth_stream(
