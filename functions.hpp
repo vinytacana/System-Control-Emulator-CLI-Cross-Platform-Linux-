@@ -39,5 +39,7 @@ void parsing_bluetooth_stream(
     std::istream &input,
     std::unordered_map<std::string, device_bt> &mapa
 );
+int obter_bateria();
+long long obter_tempo_ms();
 
 #endif

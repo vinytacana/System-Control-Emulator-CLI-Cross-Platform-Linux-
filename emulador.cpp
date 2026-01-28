@@ -586,3 +586,35 @@ void gerenciar_bluetooth()
         std::cout << "Ação desconhecida.\n";
     }
 }
+
+int obter_bateria()
+{
+    vector<string> caminhos = {
+        "/sys/class/power_supply/BAT0/capacity",
+        "/sys/class/power_supply/BAT1/capacity"
+    };
+
+    for (const auto &path : caminhos)
+    {
+        ifstream arquivo(path);
+        if (arquivo.is_open())
+        {
+            int porcentagem;
+            arquivo >> porcentagem;
+            return porcentagem;
+        }
+    }
+
+    return -1;
+}
+long long obter_tempo_ms()
+{
+    
+    auto agora = std::chrono::system_clock::now();
+    
+    
+    auto duracao = agora.time_since_epoch();
+    
+    
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duracao).count();
+}

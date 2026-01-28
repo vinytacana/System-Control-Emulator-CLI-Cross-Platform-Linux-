@@ -31,6 +31,9 @@ int main(int argc, char *argv[])
         cout << argv[0] << " desconectar_bluetooth <MAC>\n";
         cout << argv[0] << " listar_dispositivos_bluetooth\n";
         cout << argv[0] << " gerenciar_bluetooth\n";
+        cout << argv[0] << " obter_bateria\n";
+        cout << argv[0] << " obter_tempo\n";
+
 
         return 1;
     }
@@ -169,6 +172,14 @@ int main(int argc, char *argv[])
     else if (cmd == "gerenciar_bluetooth")
     {
         gerenciar_bluetooth();
+    }
+    else if(cmd == "obter_bateria"){
+        int bat = obter_bateria();
+        cout<<bat<<endl;
+    }
+    else if(cmd== "obter_tempo"){
+        long long tempo = obter_tempo_ms();
+        cout<< tempo <<endl;
     }
     else
     {
