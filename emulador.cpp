@@ -742,3 +742,26 @@ bool obter_estado_bluetooth()
 
     return false;
 }
+void definir_estado_bt(bool ligar)
+{
+    std::string acao = ligar ? "on" : "off";
+    std::string comando = "bluetoothctl power " + acao;
+
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+      
+        execlp("sh", "sh", "-c", comando.c_str(), nullptr);
+        perror("execlp falhou");
+        exit(1);
+    }
+    else if (pid > 0)
+    {
+        waitpid(pid, nullptr, 0);
+        std::cout << "Bluetooth definido para: " << acao << "\n";
+    }
+    else
+    {
+        perror("fork falhou");
+    }
+}

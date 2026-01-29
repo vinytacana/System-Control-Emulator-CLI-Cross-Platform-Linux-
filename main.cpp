@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
         cout << argv[0] << " listar_audio\n";
         cout << argv[0] << " definir_audio <ID>\n";
         cout << argv[0] << " status_bluetooth\n";
+        cout << argv[0] << " definir_estado_bt <1|0>\n";
 
         return 1;
     }
@@ -178,6 +179,17 @@ int main(int argc, char *argv[])
     {
         bool estado = obter_estado_bluetooth();
         cout << (estado ? "1" : "0") << endl;
+    }
+    else if (cmd == "definir_estado_bt")
+    {
+        if (argc < 3)
+        {
+            cout << "Uso: " << argv[0] << " definir_estado_bluetooth <1|0>\n";
+            cout << "1 = Ligar, 0 = Desligar\n";
+            return 1;
+        }
+        int estado = std::stoi(argv[2]);
+        definir_estado_bt(estado == 1);
     }
     else if (cmd == "obter_bateria")
     {
