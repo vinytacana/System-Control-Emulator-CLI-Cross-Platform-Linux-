@@ -98,7 +98,7 @@ This project is under active development. While the CLI backend is stable, futur
 - ---
 ###  License
 
-This project is open-source and available under the [MIT License](https://www.google.com/search?q=LICENSE). Contributions are welcome!
+This project is open-source and available under the [![License: MIT](https://img.shields.io)](https://opensource.org). Contributions are welcome!
 
 ---
 
@@ -201,7 +201,7 @@ Este projeto está em desenvolvimento ativo. Embora o _backend_ CLI esteja está
 - **[Planejado] Telemetria de Hardware:** Monitoramento em tempo real da temperatura da CPU e uso de RAM.
 - **[Planejado] Presets de Vídeo:** Perfis de escala pré-configurados (ex: "Pixel Perfect 3x", "Esticar 4:3") para jogos retrô.
 
----
+- ---
 ### Licença
 
-Este projeto é open-source e está disponível sob a [Licença MIT](https://www.google.com/search?q=LICENSE). Contribuições são bem-vindas!
+Este projeto é open-source e está disponível sob a [![License: MIT](https://img.shields.io)](https://opensource.org). Contribuições são bem-vindas!
