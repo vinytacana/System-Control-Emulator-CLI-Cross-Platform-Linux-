@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <iomanip>
 
 using namespace std;
 
@@ -110,7 +111,23 @@ int main(int argc, char *argv[])
     }
     else if (cmd == "listar_wifi")
     {
-        listar_wifi();
+        auto lista = listar_wifi_parsed();
+
+        cout << "[";
+        for (size_t i = 0; i < lista.size(); ++i)
+        {
+            const auto &net = lista[i];
+            cout << "{"
+                 << "\"ssid\": \"" << net.ssid << "\","
+                 << "\"sinal\": " << net.sinal << ","
+                 << "\"seguranca\": \"" << net.seguranca << "\","
+                 << "\"conectado\": " << (net.em_uso ? "true" : "false")
+                 << "}";
+
+            if (i < lista.size() - 1)
+                cout << ",";
+        }
+        cout << "]" << endl;
     }
     else if (cmd == "conectar_wifi")
     {
@@ -140,8 +157,8 @@ int main(int argc, char *argv[])
         if (argc >= 3)
             tempo_scan = std::stoi(argv[2]);
 
-        std::cout << "Escaneando dispositivos Bluetooth por "
-                  << tempo_scan << " segundos...\n";
+        cerr << "Escaneando dispositivos Bluetooth por "
+             << tempo_scan << " segundos...\n";
 
         auto dispositivos = scan_dispositivos_bluetooth(tempo_scan);
 

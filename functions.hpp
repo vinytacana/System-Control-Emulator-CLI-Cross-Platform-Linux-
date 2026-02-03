@@ -36,6 +36,7 @@ void alterarEscala(const std::string &saida, float escalaX, float escalaY = -1);
 
 // Wi-Fi
 void listar_wifi();
+std::vector<wifi_network> listar_wifi_parsed();
 void conectar_wifi(const std::string &ssid, const std::string &senha);
 void desconectar_wifi(const std::string &id);
 

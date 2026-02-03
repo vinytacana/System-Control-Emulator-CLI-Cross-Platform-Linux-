@@ -13,6 +13,10 @@
 #include <pty.h>
 #include <sys/select.h>
 #include <unordered_map>
+#include <array>  
+#include <memory>  
+#include <stdexcept> 
+#include <cstdio> 
 
 
 using namespace std;
@@ -289,22 +293,26 @@ void listar_wifi()
 
 void conectar_wifi(const string &ssid, const string &senha)
 {
+    std::cerr << "Tentando conectar em: " << ssid << "...\n";
+    
     pid_t pid = fork();
     if (pid == 0)
     {
-        string comando = "nmcli device wifi connect \"" + ssid + "\" password \"" + senha + "\"";
+        string comando = "nmcli device wifi connect \"" + ssid + "\" password \"" + senha + "\" > /dev/null 2>&1";
         execlp("sh", "sh", "-c", comando.c_str(), nullptr);
-        perror("execlp falhou");
         exit(1);
     }
     else if (pid > 0)
     {
-        waitpid(pid, NULL, 0);
-        cout << "Tentando conectar na rede: " << ssid << endl;
-    }
-    else
-    {
-        perror("fork falhou");
+        int status;
+        waitpid(pid, &status, 0);
+        
+        if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+
+        } else {
+
+            exit(1);
+        }
     }
 }
 
@@ -321,7 +329,7 @@ void desconectar_wifi(const string &id)
     else if (pid > 0)
     {
         waitpid(pid, nullptr, 0);
-        cout << "Rede \"" << id << "\" desconectada.\n";
+        std::cerr << "Rede \"" << id << "\" desconectada.\n";
     }
     else
     {
@@ -779,4 +787,55 @@ std::string exec_command(const char* cmd) {
     return result;
 }
 
+std::vector<wifi_network> listar_wifi_parsed()
+{
+    std::vector<wifi_network> redes;
+    
+    const char* cmd = "nmcli -t -f IN-USE,SSID,SIGNAL,SECURITY device wifi list";
+    
+    std::string saida;
+    try {
+        saida = exec_command(cmd);
+    } catch (...) {
+        return redes;
+    }
+
+    std::stringstream ss(saida);
+    std::string linha;
+
+    while (std::getline(ss, linha))
+    {
+
+        std::stringstream ss_linha(linha);
+        std::string segmento;
+        std::vector<std::string> campos;
+
+
+        size_t pos = 0;
+        std::string token;
+        std::string s = linha;
+        while ((pos = s.find(':')) != std::string::npos) {
+            campos.push_back(s.substr(0, pos));
+            s.erase(0, pos + 1);
+        }
+        campos.push_back(s);
+
+        if (campos.size() >= 4) {
+            wifi_network net;
+            net.em_uso = (campos[0] == "*");
+            net.ssid = campos[1];
+            try {
+                net.sinal = std::stoi(campos[2]);
+            } catch (...) {
+                net.sinal = 0;
+            }
+            net.seguranca = campos[3];
+
+            if (!net.ssid.empty()) {
+                redes.push_back(net);
+            }
+        }
+    }
+    return redes;
+}
 
