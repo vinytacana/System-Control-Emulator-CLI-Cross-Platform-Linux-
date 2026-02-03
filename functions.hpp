@@ -6,6 +6,12 @@
 #include <unordered_map>
 #include <istream>
 
+struct wifi_network{
+    std::string ssid;
+    int sinal;
+    std::string seguranca;
+    bool em_uso;
+};
 struct device_bt {
     std::string mac;
     std::string nome;
